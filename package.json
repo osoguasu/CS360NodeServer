@@ -1,0 +1,14 @@
+{	
+	"author":"Sean Lane",
+	"name":"UtahCitiesWebserver",
+	"version":"0.1.1",
+	"description":"Autocomplete utah cities, API",
+	"main":"http_static_server",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/osoguasu/CS360Project6"
+	},
+	"keywords": [
+		"utah",
+		"cities"]
+}

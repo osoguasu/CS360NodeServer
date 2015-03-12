@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+</head>
+<body>
+	<div>
+		<p>This is the weather page. Click below to go to the comments page:<br/><a href="./comments.html">Comments Page</a></p>
+		<form>
+                Enter a Utah City: <input id="cityField" type="text" value="" /> <br />
+                Suggestion: <span id="txtHint">Empty</span>
+				<p>City</p>
+				<textarea id="dispcity">No City</textarea>
+				<div id="weather">No Weather</div>
+				<input type="submit" id="button" value="submit"/>
+            </form>
+            <script type="text/javascript">
+
+                $("#button").click(function(e) {
+                    e.preventDefault();
+				    $("#dispcity").text($("#cityField").val());
+				    $.getJSON("https://api.wunderground.com/api/bed8fa093ec37721/conditions/q/UT/" + $("#cityField").val() + ".json",
+                        function (data) {
+                            console.log(data);
+                            var weatherData = "<ul><li>Location: " + data.current_observation.display_location.full +
+                                "</li><li>Temperature: " + data.current_observation.temperature_string +
+                                "</li><li>Weather: " + data.current_observation.weather + "</li><ul>";
+                            $("#weather").html(weatherData);
+                    });
+                });
+
+                $("#cityField").keyup(function(){
+						$.getJSON("/getcity?q="+$("#cityField").val(),
+						function(data){
+							var everything;
+							everything = "<ul>";
+							$.each(data, function(i, item) {
+								everything += "<li> "+data[i].city+" </li>";
+ 							});
+							everything += "</ul>";
+							console.log("Got " + data);
+							console.log("Got " + data[0]);
+							console.log("Got " + data[0].city);
+							$("#txtHint").html(everything);
+						})
+						.done(function(){console.log("Request Success");})
+						.fail(function(jqXHR, textStatus, errorThrown){
+							console.log("Failed: " + textStatus);
+							console.log("incoming "+ jqXHR.responseText);
+						})
+						.always(function() {console.log("Always");})
+						.complete(function() {console.log("Complete");})
+				});
+            </script>
+	</div><!-- /.container -->
+</body>
+</html>
+

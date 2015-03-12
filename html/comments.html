@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+<script>
+
+$(document).ready(function(){      
+  var url = "./comment";
+  $('#btnShow').click(function() { 
+
+    $.getJSON(url, function(data) {
+      var everything;
+      everything = "<h3>Comments</h3><ul>";
+      $.each(data, function(i,item) {
+          everything += "<li> Name: " + data[i].Name+" Comment: " + data[i].Comment + "</li>";
+        });
+        everything += "</ul>";
+        $("#json").html(everything);
+      })
+
+
+  });
+  $('#btnSubmit').click(function(){
+    var myobj = {Name:$("#Name").val(),Comment:$("#Comment").val()};
+    console.log("Object: ");
+    console.log(myobj);
+    jobj = JSON.stringify(myobj);
+    $.post(url, jobj, function (data, textStatus) { 
+      $("#done").append(textStatus);
+    });
+  });
+});
+</script>
+</head>
+<body>
+<p> This is the comments page. Click below to go to the weather page<br/>
+<a href="./weather.html">Weather Page</a></p>
+<form id="commentForm" action="">
+  Name: <input type="text" id="Name" name="Name" value="Mickey"><br>
+  comment: <input type="text" id="Comment" name="Comment" value="Hello"><br>
+</form>
+
+<button id="btnSubmit" >Submit Comment</button> <br/> 
+
+<button id="btnShow"> Show Comments</button>
+
+<div id="json"></div>
+
+</body>
+</html>
+
