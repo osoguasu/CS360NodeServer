@@ -1,0 +1,7 @@
+Welcome to the New Relic Server Monitor.
+
+Please follow the installation instructions found at
+https://docs.newrelic.com/docs/server/ for information on
+how to correctly install and configure your software.
+
+Thank you for choosing New Relic.

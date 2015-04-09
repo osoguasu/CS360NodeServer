@@ -1,0 +1,146 @@
+#!/bin/sh
+#
+# New Relic Server Monitor configuration script
+#
+#   This script can be used to easily update the Server Monitor configuration
+#   file from the command line.
+#
+
+set -e
+
+if [ -f /etc/sysconfig/newrelic-sysmond ]; then
+  . /etc/sysconfig/newrelic-sysmond
+elif [ -f /etc/default/newrelic-sysmond ]; then
+  . /etc/default/newrelic-sysmond
+fi
+
+if [ -z "${cfgfile}" ]; then
+  if [ -f /etc/newrelic/nrsysmond.cfg ]; then
+    cfgfile=/etc/newrelic/nrsysmond.cfg
+  elif [ -f /etc/nrsysmond.cfg ]; then
+    cfgfile=/etc/nrsysmond.cfg
+  elif [ -f /usr/local/etc/nrsysmond.cfg ]; then
+    cfgfile=/usr/local/etc/nrsysmond.cfg
+  else
+    cfgfile=/etc/newrelic/nrsysmond.cfg
+  fi
+fi
+
+DEFAULT_CONFIG="${cfgfile}"
+
+usage() {
+  echo
+  echo "Usage: $0 [-c config_file] --set key=value [key=value ...]"
+  echo
+  echo "  Valid configuration keys:"
+  echo "    license_key          Your New Relic license key"
+  echo "    loglevel             Desired logging level"
+  echo "    logfile              Log file name"
+  echo "    ssl                  Whether or nor to use SSL (true|false)"
+  echo
+  echo "  config_file defaults to: ${DEFAULT_CONFIG}"
+  exit 1
+}
+
+error() {
+  echo "Error: $@"
+}
+
+if [ "$1" = "-c" ]; then
+  if [ -n "$2" ]; then
+    cfgfile="$2"
+  else
+    usage
+  fi
+  shift 2
+fi
+
+if [ ! -f "${cfgfile}" ]; then
+  error "config file ${cfgfile} does not exist"
+  exit 1
+fi
+
+if echo ' \c' | grep -q 'c' > /dev/null 2>&1; then
+  en='-n'
+  ec=
+else
+  en=
+  ec='\c'
+fi
+
+sedsep=`echo $en "a$ec" | tr 'a' '\001'`
+
+COMMAND="$1"
+if [ "x$COMMAND" = "x" ]; then
+  usage
+elif [ "$COMMAND" != "--set" ]; then
+  error "unknown command: $COMMAND"
+  exit 1
+fi
+shift
+
+sedscript=
+
+for kvpair in "$@"; do
+  KEY=`echo "$kvpair" | awk -F = '{ print $1; }'`
+  VALUE=`echo "$kvpair" | awk -F = '{ print $2; }'`
+  if [ -z "$KEY" ]; then
+    error "no configuration key specified for --set"
+    exit 1
+  fi
+
+  if [ "x$VALUE" = "x" ]; then
+    error "no value specified for $KEY"
+    exit 1
+  fi
+
+  case "$KEY" in
+    license_key)
+      case "${VALUE}" in
+        ????????????????????????????????????????) ;;
+        *) error "invalid license key - must be 40 characters exactly"
+           exit 1
+           ;;
+      esac
+      ;;
+    loglevel)
+      case "$VALUE" in
+        error | warning | info | verbose | debug | verbosedebug) ;;
+        *) error "invalid log level '${VALUE}'"
+           exit 1
+           ;;
+      esac
+      ;;
+    logfile) ;;
+    ssl)
+      case "$VALUE" in
+        true | false) ;;
+        *) error "invalid SSL value '${VALUE}' - must be true or false"
+           exit 1
+           ;;
+      esac
+      ;;
+    *) error "invalid configuration key: '$KEY'"
+       exit 1
+       ;;
+  esac
+
+  if grep -q "^[ 	]*${KEY}[ 	]*=" "$cfgfile" > /dev/null 2>&1; then
+    scmd="s${sedsep}^[ 	]*${KEY}[ 	]*=.*${sedsep}${KEY}=${VALUE}${sedsep};"
+  elif grep -q "^#[ 	]*${KEY}[ 	]*=" "$cfgfile" > /dev/null 2>&1; then
+    scmd="s${sedsep}^#[ 	]*${KEY}[ 	]*=.*${sedsep}${KEY}=${VALUE}${sedsep};"
+  else
+    scmd="$ a\\
+${KEY}=${VALUE}
+;"
+  fi
+  sedscript="${sedscript}${scmd}"
+done
+
+cp -f "${cfgfile}" "${cfgfile}.bak" || {
+  error "could not create backup file"
+  exit 1
+}
+chmod 600 "${cfgfile}.bak"
+sed -e "${sedscript}" "${cfgfile}.bak" >"${cfgfile}"
+
